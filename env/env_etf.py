@@ -40,9 +40,26 @@ class EtfTradingEnv:
     def sample_tasks(self, num_tasks):
         return np.random.choice(np.array(os.listdir(self.data_dir)), size=num_tasks, replace=False)
     
+    def load_data(self, filepath: str):
+        header_list = ['Gmt time', 'Open', 'High', 'Low', 'Close', 'Volume']
+        df = pd.read_csv(filepath, usecols=header_list)[header_list]
+        
+        datetime_col = pd.to_datetime(df['Gmt time'].str.slice(0,-7) , format='%d.%m.%Y %H:%M').dt
+        df['hour'] = datetime_col.hour
+        df['minute'] = datetime_col.hour
+        df['dayWeek'] = datetime_col.dayofweek
+        df.drop("Gmt time", axis=1, inplace=True)
+        df.rename(columns={
+            'Open' : 'open',
+            'High' : 'high',
+            'Low' : 'low',
+            'Close' : 'close',
+            'Volume' : 'vol'
+        }, inplace=True)
+
     def reset_task(self, task):
         self.data_file = task
-        self.data_df = pd.read_csv(self.data_dir + '/' + self.data_file)
+        self.data_df = self.load_data(self.data_dir + '/' + self.data_file)
         self.end_step = self.data_df.shape[0] - 1
 
     def step(self, actions):
