@@ -1,14 +1,17 @@
+import gym
 import os
 import numpy as np
 import pandas as pd
+from logger import Logger 
 
-class EtfTradingEnv:
+
+class EtfTradingEnv(gym.Env):
     def __init__(
         self,
-        env_name,
         market_data_dim,
         lag,
         data_file,
+        env_name="etf_spdr500",
         reward_scaling=2 ** -11,
         price_scaling=1e-3,
         min_order_val=10,
@@ -31,11 +34,14 @@ class EtfTradingEnv:
         self.bid_close_idx = 3
         self.ask_close_idx = 7
 
+        self.logger = Logger("etf_spdr500")
+
         # reset
         self.position = 0
         self.open_position_val = 0
         self.step_idx = 0
         self.capital = self.start_capital
+        self.asset = self.start_capital
 
     def sample_tasks(self, num_tasks):
         return np.random.choice(np.array(os.listdir(self.data_dir)), size=num_tasks, replace=False)
@@ -97,8 +103,9 @@ class EtfTradingEnv:
             ask_close = next_market_data[self.ask_close_idx]
             self.open_position_val = self.position * ask_close
         
-        next_asset = self.open_position_val + self.capital
-        reward = next_asset - curr_asset
+        # self.asset is the next state asset
+        self.asset = self.open_position_val + self.capital
+        reward = self.asset - curr_asset
         done = self.step_idx + self.lag == self.end_step
 
         if self.step_idx == 1 :
@@ -118,6 +125,13 @@ class EtfTradingEnv:
         self.open_position_val = 0
         self.step_idx = 0
         self.capital = self.start_capital
+        self.asset = self.start_capital
+    
+    def render(self):
+        if self.step_idx == 0:
+            self.logger.info(self.env_name + " :: Start session")
+        else:
+            self.logger.info(f"{self.step_idx},{self.asset}")
     
     def lagged_market_data(self, curr_idx: int, lag: int):
         return self.data_df.iloc[curr_idx-lag: curr_idx+1].to_numpy().flatten()
@@ -128,7 +142,6 @@ class EtfTradingEnv:
         curr_lagged_data = np.roll(curr_lagged_data, -next_len)
         np.put(curr_lagged_data, range(lagged_len-next_len, lagged_len), next_market_data)
         return curr_lagged_data
-
 
 
 
