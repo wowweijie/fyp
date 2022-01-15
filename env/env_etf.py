@@ -8,9 +8,7 @@ from logger import Logger
 class EtfTradingEnv(gym.Env):
     def __init__(
         self,
-        market_data_dim,
         lag,
-        data_file,
         env_name="etf_spdr500",
         reward_scaling=2 ** -11,
         price_scaling=1e-3,
@@ -19,10 +17,8 @@ class EtfTradingEnv(gym.Env):
         data_dir='./data/spdr500',
         start_capital=10**6
     ):
-        self.env_name = env_name
-        self.market_data_dim = market_data_dim
+        self.env_name = env_name,
         self.lag = lag,
-        self.data_file = data_file
         self.reward_scaling = reward_scaling
         self.price_scaling = price_scaling
         self.min_order_val = min_order_val
@@ -67,6 +63,7 @@ class EtfTradingEnv(gym.Env):
         self.data_file = task
         self.data_df = self.load_data(self.data_dir + '/' + self.data_file)
         self.end_step = self.data_df.shape[0] - 1
+        self.market_data_dim = self.data_df.shape[1]
 
     def step(self, actions):
         order_val = actions[0] * self.max_order_val
@@ -143,7 +140,8 @@ class EtfTradingEnv(gym.Env):
         np.put(curr_lagged_data, range(lagged_len-next_len, lagged_len), next_market_data)
         return curr_lagged_data
 
-
+    def get_episodic_step(self):
+        return self.data_df.shape[0] 
 
         
 

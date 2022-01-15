@@ -1,2 +1,13 @@
 # fyp
 Final Year Project
+
+
+Data from Dukascopy:
+
+Candlestick: 1 minute
+Offer: Bid/Ask
+Date: 1 month period
+Filter flats: All
+Day Start Time: UTC
+Volume units: Thousands
+Local/GMT: GMT
