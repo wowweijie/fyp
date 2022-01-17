@@ -26,7 +26,6 @@ class EtfTradingEnv(gym.Env):
         self.data_dir = data_dir
         self.start_capital = start_capital
         # state: position, bid ohlc, ask ohlc, dayOfWeek, timeOfDay, volume 
-        self.state_dim = 1 + market_data_dim
         self.bid_close_idx = 3
         self.ask_close_idx = 7
 
@@ -42,26 +41,50 @@ class EtfTradingEnv(gym.Env):
     def sample_tasks(self, num_tasks):
         return np.random.choice(np.array(os.listdir(self.data_dir)), size=num_tasks, replace=False)
     
-    def load_data(self, filepath: str):
+    def load_data(self, filepath: str, askOrBid: str):
         header_list = ['Gmt time', 'Open', 'High', 'Low', 'Close', 'Volume']
         df = pd.read_csv(filepath, usecols=header_list)[header_list]
         
-        datetime_col = pd.to_datetime(df['Gmt time'].str.slice(0,-7) , format='%d.%m.%Y %H:%M').dt
-        df['hour'] = datetime_col.hour
-        df['minute'] = datetime_col.hour
-        df['dayWeek'] = datetime_col.dayofweek
+        datetime_col = pd.to_datetime(df['Gmt time'].str.slice(0,-7) , format='%d.%m.%Y %H:%M')
+        datetime_prop = datetime_col.dt
+        df['hour'] = datetime_prop.hour
+        df['minute'] = datetime_prop.minute
+        df['dayWeek'] = datetime_prop.dayofweek
+        df['timestamp'] = datetime_col
         df.drop("Gmt time", axis=1, inplace=True)
+        df.set_index('timestamp', drop=True, inplace=True)
         df.rename(columns={
-            'Open' : 'open',
-            'High' : 'high',
-            'Low' : 'low',
-            'Close' : 'close',
-            'Volume' : 'vol'
+            'Open' : askOrBid + '_open',
+            'High' : askOrBid + '_high',
+            'Low' : askOrBid + '_low',
+            'Close' : askOrBid + '_close',
+            'Volume' : askOrBid + '_vol'
         }, inplace=True)
 
+        return df
+
+    def load_task(self, source):
+        df1 = None
+        df2 = None
+        for file in os.listdir(source):
+            if "BID" in file:
+                if df1 is None:
+                    df1 = self.load_data(source + '/' + file, 'bid')
+                    print("loaded " + file)
+                else:
+                    print("Unable to overwrite existing bid data")
+            elif "ASK" in file:
+                if df2 is None:
+                    df2 = self.load_data(source + '/' + file, 'ask')
+                    print("loaded " + file)
+                else:
+                    print("Unable to overwrite existing ask data")
+            else:
+                print("skipping " + file)
+        return pd.concat([df1, df2], axis=1)
+
     def reset_task(self, task):
-        self.data_file = task
-        self.data_df = self.load_data(self.data_dir + '/' + self.data_file)
+        self.data_df = self.load_task(self.data_dir + '/' + task)
         self.end_step = self.data_df.shape[0] - 1
         self.market_data_dim = self.data_df.shape[1]
 
