@@ -6,6 +6,9 @@ from logger import Logger
 
 
 class EtfTradingEnv(gym.Env):
+
+    metadata = {'render.modes': ['human']}
+
     def __init__(
         self,
         lag,
@@ -18,16 +21,16 @@ class EtfTradingEnv(gym.Env):
         start_capital=10**6
     ):
         self.env_name = env_name,
-        self.lag = lag,
+        self.lag = lag
         self.reward_scaling = reward_scaling
         self.price_scaling = price_scaling
         self.min_order_val = min_order_val
         self.max_order_val = max_order_val
         self.data_dir = data_dir
         self.start_capital = start_capital
+        
         # state: position, bid ohlc, ask ohlc, dayOfWeek, timeOfDay, volume 
-        self.bid_close_idx = 3
-        self.ask_close_idx = 7
+        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(1,))
 
         self.logger = Logger("etf_spdr500")
 
@@ -85,8 +88,14 @@ class EtfTradingEnv(gym.Env):
 
     def reset_task(self, task):
         self.data_df = self.load_task(self.data_dir + '/' + task)
-        self.end_step = self.data_df.shape[0] - 1
-        self.market_data_dim = self.data_df.shape[1]
+        self.end_idx = self.data_df.shape[0] - 1
+        self.bid_close_idx = self.data_df.columns.get_loc("bid_close")
+        self.ask_close_idx = self.data_df.columns.get_loc("ask_close")
+        market_data_dim = self.data_df.shape[1]
+        # state: | position | bid ohlc, ask ohlc, dayOfWeek, timeOfDay, volume |
+        self.observation_space = gym.spaces.Box(
+            low=-np.inf, high=np.inf, shape=((1 + self.lag) * market_data_dim + 1,)
+        )
 
     def step(self, actions):
         order_val = actions[0] * self.max_order_val
@@ -94,14 +103,14 @@ class EtfTradingEnv(gym.Env):
 
         if order_val < -self.min_order_val:
             bid_close = self.data_df.iloc[self.step_idx + self.lag, self.bid_close_idx]
-            sell_qty = -order_val // bid_close
-            if self.position > 0:
-                self.capital += min(sell_qty, self.position) * bid_close
-            self.position -= sell_qty
+            if curr_asset > 0:
+                sell_qty = - min(curr_asset, order_val) // bid_close
+                self.capital += sell_qty * bid_close
+                self.position -= sell_qty
 
         elif order_val > self.min_order_val:
             ask_close = self.data_df.iloc[self.step_idx + self.lag, self.ask_close_idx]
-            buy_qty = order_val // ask_close
+            buy_qty = min(self.capital, order_val) // ask_close
             self.position += buy_qty
             self.capital -= buy_qty * ask_close
         
@@ -110,7 +119,6 @@ class EtfTradingEnv(gym.Env):
         self.step_idx += 1
         next_market_data = self.data_df.iloc[self.step_idx + self.lag].to_numpy()
         
-        self.open_position_val = 0
         # calculate wealth
         # if there are open long positions
         if self.position > 0:
@@ -126,17 +134,14 @@ class EtfTradingEnv(gym.Env):
         # self.asset is the next state asset
         self.asset = self.open_position_val + self.capital
         reward = self.asset - curr_asset
-        done = self.step_idx + self.lag == self.end_step
+        done = self.step_idx + self.lag == self.end_idx
 
-        if self.step_idx == 1 :
-            self.market_data_state = self.lagged_market_data(self.step_idx + self.lag, self.lag)
-        else:
-            self.market_data_state = self.next_lagged_data(self.market_data_state, next_market_data)
+        self.market_data_state = self.next_lagged_data(self.market_data_state, next_market_data)
 
-        state = np.hstack(
+        state = np.hstack((
             self.position,
             self.market_data_state,
-        )
+        ))
 
         return state, reward, done, dict()
     
@@ -146,12 +151,20 @@ class EtfTradingEnv(gym.Env):
         self.step_idx = 0
         self.capital = self.start_capital
         self.asset = self.start_capital
+        self.market_data_state = self.lagged_market_data(self.lag, self.lag)
+
+        return np.hstack((
+            self.position,
+            self.market_data_state
+        ))
     
     def render(self):
         if self.step_idx == 0:
             self.logger.info(self.env_name + " :: Start session")
         else:
-            self.logger.info(f"{self.step_idx},{self.asset}")
+            step_idx = self.step_idx
+            asset = self.asset
+            self.logger.info(f"{step_idx},{asset}")
     
     def lagged_market_data(self, curr_idx: int, lag: int):
         return self.data_df.iloc[curr_idx-lag: curr_idx+1].to_numpy().flatten()
@@ -164,7 +177,7 @@ class EtfTradingEnv(gym.Env):
         return curr_lagged_data
 
     def get_episodic_step(self):
-        return self.data_df.shape[0] 
+        return self.end_idx - self.lag + 1
 
         
 
