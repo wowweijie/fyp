@@ -49,10 +49,6 @@ class EtfTradingEnv(gym.Env):
         df = pd.read_csv(filepath, usecols=header_list)[header_list]
         
         datetime_col = pd.to_datetime(df['Gmt time'].str.slice(0,-7) , format='%d.%m.%Y %H:%M')
-        datetime_prop = datetime_col.dt
-        df['hour'] = datetime_prop.hour
-        df['minute'] = datetime_prop.minute
-        df['dayWeek'] = datetime_prop.dayofweek
         df['timestamp'] = datetime_col
         df.drop("Gmt time", axis=1, inplace=True)
         df.set_index('timestamp', drop=True, inplace=True)
@@ -84,7 +80,11 @@ class EtfTradingEnv(gym.Env):
                     print("Unable to overwrite existing ask data")
             else:
                 print("skipping " + file)
-        return pd.concat([df1, df2], axis=1)
+        df = pd.concat([df1, df2], axis=1)
+        df.insert(0, 'hour', df.index.hour)
+        df.insert(0, 'minute', df.index.minute)
+        df.insert(0, 'dayWeek', df.index.dayofweek)
+        return df
 
     def reset_task(self, task):
         self.data_df = self.load_task(self.data_dir + '/' + task)
