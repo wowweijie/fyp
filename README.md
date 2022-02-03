@@ -11,3 +11,7 @@ Filter flats: All
 Day Start Time: UTC
 Volume units: Thousands
 Local/GMT: GMT
+
+GCloud Storage rsync
+
+gsutil rsync -d -r ./data gs://fyp-data-wj 
