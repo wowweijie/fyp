@@ -1,0 +1,19 @@
+trainingInput:
+  lag: 4
+  hyperparameters:
+    goal: MINIMIZE
+    hyperparameterMetricTag: test_loss
+    maxTrials: 2
+    maxParallelTrials: 2
+    enableTrialEarlyStopping: True
+    params:
+    - parameterName: learning-rate
+      type: DOUBLE
+      minValue: 0.0001
+      maxValue: 1
+      scaleType: UNIT_LOG_SCALE
+    - parameterName: batch-size
+      type: INTEGER
+      minValue: 1
+      maxValue: 256
+      scaleType: UNIT_LINEAR_SCALE

@@ -32,7 +32,7 @@ class EtfTradingEnv(gym.Env):
         # state: position, bid ohlc, ask ohlc, dayOfWeek, timeOfDay, volume 
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(1,))
 
-        self.logger = Logger("etf_spdr500")
+        self.logger = Logger()
 
         # reset
         self.position = 0
@@ -69,17 +69,17 @@ class EtfTradingEnv(gym.Env):
             if "BID" in file:
                 if df1 is None:
                     df1 = self.load_data(source + '/' + file, 'bid')
-                    print("loaded " + file)
+                    self.logger.info("loaded " + file)
                 else:
-                    print("Unable to overwrite existing bid data")
+                    self.logger.info("Unable to overwrite existing bid data")
             elif "ASK" in file:
                 if df2 is None:
                     df2 = self.load_data(source + '/' + file, 'ask')
-                    print("loaded " + file)
+                    self.logger.info("loaded " + file)
                 else:
-                    print("Unable to overwrite existing ask data")
+                    self.logger.info("Unable to overwrite existing ask data")
             else:
-                print("skipping " + file)
+                self.logger.info("skipping " + file)
         df = pd.concat([df1, df2], axis=1)
         df.insert(0, 'hour', df.index.hour)
         df.insert(0, 'minute', df.index.minute)
@@ -120,16 +120,21 @@ class EtfTradingEnv(gym.Env):
         next_market_data = self.data_df.iloc[self.step_idx + self.lag].to_numpy()
         
         # calculate wealth
-        # if there are open long positions
+        # if there is open long position
         if self.position > 0:
             # overwrite bid_close with new state 
             bid_close = next_market_data[self.bid_close_idx]
             self.open_position_val = self.position * bid_close
 
+        # if there is open short position
         elif self.position < 0:
             # overwrite ask_close with new state 
             ask_close = next_market_data[self.ask_close_idx]
             self.open_position_val = self.position * ask_close
+
+        # if no positions
+        else:
+            self.open_position_val = 0
         
         # self.asset is the next state asset
         self.asset = self.open_position_val + self.capital
@@ -143,14 +148,20 @@ class EtfTradingEnv(gym.Env):
             self.market_data_state,
         ))
 
+        if self.step_idx == 1:
+            self.logger.info(state)
+
         return state, reward, done, dict()
     
     def reset(self):
+        self.logger.info("Environment Reset")
+        self.logger.info(self.__dict__)
         self.position = 0
         self.open_position_val = 0
         self.step_idx = 0
         self.capital = self.start_capital
         self.asset = self.start_capital
+        self.performance = pd.DataFrame(index=np.arange(0, self.end_idx + 1), columns=('position', 'current_asset'))
         self.market_data_state = self.lagged_market_data(self.lag, self.lag)
 
         return np.hstack((
@@ -160,11 +171,11 @@ class EtfTradingEnv(gym.Env):
     
     def render(self):
         if self.step_idx == 0:
-            self.logger.info(self.env_name + " :: Start session")
-        else:
-            step_idx = self.step_idx
-            asset = self.asset
-            self.logger.info(f"{step_idx},{asset}")
+            self.logger.info(self.env_name + " :: Start session with rendering")
+
+        self.performance.iloc[self.step_idx]['position'] = self.position
+        self.performance.iloc[self.step_idx]['current_asset'] = self.asset
+            
     
     def lagged_market_data(self, curr_idx: int, lag: int):
         return self.data_df.iloc[curr_idx-lag: curr_idx+1].to_numpy().flatten()

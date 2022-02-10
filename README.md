@@ -15,3 +15,7 @@ Local/GMT: GMT
 GCloud Storage rsync
 
 gsutil rsync -d -r ./data gs://fyp-data-wj 
+
+Training Job 
+
+gcr.io/cloud-ml-public/training/pytorch-gpu.1-9
