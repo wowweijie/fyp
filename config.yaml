@@ -1,5 +1,4 @@
 trainingInput:
-  lag: 4
   hyperparameters:
     goal: MINIMIZE
     hyperparameterMetricTag: test_loss

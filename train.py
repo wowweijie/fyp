@@ -1,7 +1,7 @@
 import gym
 from stable_baselines3 import A2C
 from stable_baselines3.common.monitor import Monitor
-from env.env_etf import EtfTradingEnv
+from .env.env_etf import EtfTradingEnv
 import os 
 import argparse
 import subprocess
@@ -11,24 +11,28 @@ from logger import Logger
 from datetime import datetime
 import pytz
 
-cuda_availability = torch.cuda.is_available()
-if cuda_availability:
-  device = torch.device('cuda:{}'.format(torch.cuda.current_device()))
-else:
-  device = 'cpu'
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--remote', action="store_true", help='specify whether training is done on gcloud')
 args = parser.parse_args()
 
-timestamp = datetime.now(pytz.timezone('Asia/Singapore')).strftime("%d_%m_%H-%M-%S")
-logger = Logger('spdr500', timestamp, 'train')
-
-with open(r'config.yaml') as file:
+with open(r'fyp/session.yaml') as file:
     configs = yaml.load(file, Loader=yaml.FullLoader)
 
+sessionName = configs['sessionName']
+
+timestamp = datetime.now(pytz.timezone('Asia/Singapore')).strftime("%d_%m_%H-%M-%S")
+logger = Logger(sessionName, timestamp, 'train')
+
 logger.info(yaml.dump(configs))
-train_configs = configs['trainingInput']
+
+cuda_availability = torch.cuda.is_available()
+if cuda_availability:
+    logger.info('CUDA enabled')
+    device = torch.device('cuda:{}'.format(torch.cuda.current_device()))
+else:
+    logger.info('No CUDA')
+    device = 'cpu'
+
 
 if args.remote:
     subprocess.call([
@@ -39,16 +43,16 @@ if args.remote:
         './data'
     ])
 
-env = EtfTradingEnv(lag=train_configs['lag'])
+env = EtfTradingEnv(lag=configs['lag'])
 env.reset_task('SPY.USUSD_Candlestick_1_M_01.01.2021-31.01.2021')
 env = Monitor(env)
-model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=f'./logs/spdr500_{timestamp}/tb_logs/')
+model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
 num_episode_train = 3
 model.learn(total_timesteps=num_episode_train * env.get_episodic_step(), log_interval=400)
 print(env.asset)
 logger.info(f"env asset after training: {env.asset}")
 
-trading_env = EtfTradingEnv(lag=train_configs['lag'])
+trading_env = EtfTradingEnv(lag=configs['lag'])
 trade_task = 'SPY.USUSD_Candlestick_1_M_01.02.2021-28.02.2021'
 trading_env.reset_task(trade_task)
 obs = trading_env.reset()

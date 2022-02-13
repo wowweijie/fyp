@@ -6,7 +6,8 @@ REQUIRED_PACKAGES = [
     'torchvision==0.10.0+cu111',
     'torchaudio==0.9.0',
     'stable-baselines3[extra]==1.4.0',
-    'pyyaml']
+    'pyyaml',
+    'gym']
 
 setup(
     name='fyp',
