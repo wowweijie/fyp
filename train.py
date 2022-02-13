@@ -1,4 +1,3 @@
-import gym
 from stable_baselines3 import A2C
 from stable_baselines3.common.monitor import Monitor
 from .env.env_etf import EtfTradingEnv
@@ -7,7 +6,7 @@ import argparse
 import subprocess
 import torch
 import yaml
-from logger import Logger
+from .logger import Logger
 from datetime import datetime
 import pytz
 
@@ -43,7 +42,7 @@ if args.remote:
         './data'
     ])
 
-env = EtfTradingEnv(lag=configs['lag'])
+env = EtfTradingEnv(lag=configs['lag'], data_dir='./fyp/data/spdr500')
 env.reset_task('SPY.USUSD_Candlestick_1_M_01.01.2021-31.01.2021')
 env = Monitor(env)
 model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')

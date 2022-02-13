@@ -2,7 +2,7 @@ import gym
 import os
 import numpy as np
 import pandas as pd
-from logger import Logger 
+from ..logger import Logger 
 
 
 class EtfTradingEnv(gym.Env):
