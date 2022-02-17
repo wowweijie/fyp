@@ -26,6 +26,9 @@ class Logger(metaclass=Singleton):
                                   datefmt='%Y-%m-%d %H:%M:%S')
             fileHandler.setFormatter(formatter)
             self.logger.addHandler(fileHandler)
+            consoleHandler = logging.StreamHandler()
+            consoleHandler.setFormatter(formatter)
+            self.logger.addHandler(fileHandler)
         else:
             self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
