@@ -1,6 +1,7 @@
 import logging 
 import concurrent.futures 
 import os
+import sys
 
 class Singleton(type):
     _instances = {}
@@ -26,9 +27,9 @@ class Logger(metaclass=Singleton):
                                   datefmt='%Y-%m-%d %H:%M:%S')
             fileHandler.setFormatter(formatter)
             self.logger.addHandler(fileHandler)
-            consoleHandler = logging.StreamHandler()
+            consoleHandler = logging.StreamHandler(sys.stdout)
             consoleHandler.setFormatter(formatter)
-            self.logger.addHandler(fileHandler)
+            self.logger.addHandler(consoleHandler)
         else:
             self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)

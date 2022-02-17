@@ -10,8 +10,9 @@
             "request": "launch",
             "program": "train.py",
             "console": "integratedTerminal",
-            "args": ["--remote", "--job-dir", "gs://fyp_job/spdr500_02_17_22_12h45m22s"],
-            "cwd": "./trainer/"
+            "cwd": "${workspaceFolder}/trainer",
+            "env": {"PYTHONPATH" : "${workspaceRoot}"},
+            "justMyCode": false
         },
         {
             "name": "Python: Current File",
