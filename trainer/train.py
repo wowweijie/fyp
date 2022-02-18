@@ -62,9 +62,6 @@ else:
     logger.info('No CUDA')
     device = 'cpu'
 
-print(f"/tmp: {[f for f in os.listdir('/tmp')]}")
-print(f"/tmp/data: {[f for f in os.listdir('/tmp/data')]}")
-print(f"/tmp/data/spdr500: {[f for f in os.listdir('/tmp/data/spdr500')]}")
 env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
 env.reset_task('SPY.USUSD_Candlestick_1_M_01.01.2021-31.01.2021')
 env = Monitor(env)

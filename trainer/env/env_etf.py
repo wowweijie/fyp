@@ -86,8 +86,8 @@ class EtfTradingEnv(gym.Env):
         df.insert(0, 'dayWeek', df.index.dayofweek)
         return df
 
-    def reset_task(self, task):
-        self.data_df = self.load_task(self.data_dir + '/' + task)
+    def reset_task(self, *tasks):
+        self.data_df = pd.concat([self.load_task(self.data_dir + '/' + task) for task in tasks])
         self.end_idx = self.data_df.shape[0] - 1
         self.bid_close_idx = self.data_df.columns.get_loc("bid_close")
         self.ask_close_idx = self.data_df.columns.get_loc("ask_close")
