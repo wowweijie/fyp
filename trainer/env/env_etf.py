@@ -145,7 +145,7 @@ class EtfTradingEnv(gym.Env):
 
         state = np.hstack((
             self.position,
-            self.market_data_state,
+            self.normalize_window(self.market_data_state)
         ))
 
         if self.step_idx == 1:
@@ -166,7 +166,7 @@ class EtfTradingEnv(gym.Env):
 
         return np.hstack((
             self.position,
-            self.market_data_state
+            self.normalize_window(self.market_data_state)
         ))
     
     def render(self):
@@ -175,17 +175,28 @@ class EtfTradingEnv(gym.Env):
 
         self.performance.iloc[self.step_idx]['position'] = self.position
         self.performance.iloc[self.step_idx]['current_asset'] = self.asset
-            
     
     def lagged_market_data(self, curr_idx: int, lag: int):
-        return self.data_df.iloc[curr_idx-lag: curr_idx+1].to_numpy().flatten()
+        return self.data_df.iloc[curr_idx-lag: curr_idx+1].reset_index(inplace=False, drop=True).copy()
     
-    def next_lagged_data(self, curr_lagged_data: np.array, next_market_data: np.ndarray):
-        lagged_len = len(curr_lagged_data)
-        next_len = len(next_market_data)
-        curr_lagged_data = np.roll(curr_lagged_data, -next_len)
-        np.put(curr_lagged_data, range(lagged_len-next_len, lagged_len), next_market_data)
+    def next_lagged_data(self, curr_lagged_data: pd.DataFrame, next_market_data: pd.Series):
+        curr_lagged_data = curr_lagged_data.shift(-1)
+        curr_lagged_data.iloc[-1] = next_market_data
         return curr_lagged_data
+
+    def normalize_window(self, sliding_window: pd.DataFrame):
+        mean = sliding_window.mean()
+        normalized_window = sliding_window.copy()
+        normalized_window['bid_open'] = normalized_window['bid_open'] - mean['bid_open']
+        normalized_window['bid_high'] = normalized_window['bid_high'] - mean['bid_high']
+        normalized_window['bid_low'] = normalized_window['bid_low'] - mean['bid_low']
+        normalized_window['bid_close'] = normalized_window['bid_close'] - mean['bid_close']
+
+        normalized_window['ask_open'] = normalized_window['ask_open'] - mean['ask_open']
+        normalized_window['ask_high'] = normalized_window['ask_high'] - mean['ask_high']
+        normalized_window['ask_low'] = normalized_window['ask_low'] - mean['ask_low']
+        normalized_window['ask_close'] = normalized_window['ask_close'] - mean['ask_close']
+        return normalized_window.to_numpy().flatten()
 
     def get_episodic_step(self):
         return self.end_idx - self.lag + 1
