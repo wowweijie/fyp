@@ -104,7 +104,7 @@ class EtfTradingEnv(gym.Env):
         if order_val < -self.min_order_val:
             bid_close = self.data_df.iloc[self.step_idx + self.lag, self.bid_close_idx]
             if curr_asset > 0:
-                sell_qty = - min(curr_asset, order_val) // bid_close
+                sell_qty = min(curr_asset, -order_val) // bid_close
                 self.capital += sell_qty * bid_close
                 self.position -= sell_qty
 
