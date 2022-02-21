@@ -17,9 +17,7 @@ parser.add_argument('--job-dir', action="store", type=str, help='specify gcloud 
 args = parser.parse_args()
 
 globals()['DATA_PATH'] = '/tmp' if args.remote else './' 
-globals()['CONFIG_PATH'] = '/tmp' if args.remote else '../' 
 DATA_PATH = globals()['DATA_PATH']
-CONFIG_PATH = globals()['CONFIG_PATH']
  
 print(f"Current Directory: {os.getcwd()}")
 print(f"ls: {[f for f in os.listdir('.')]}")
@@ -41,10 +39,10 @@ if args.remote:
         # Local path
         os.path.join(DATA_PATH, 'config')
     ])
-    with open(os.path.join(DATA_PATH, 'config', 'session.yaml')) as file:
+    with open(os.path.join(DATA_PATH, 'config', 'session_remote.yaml')) as file:
         configs = yaml.load(file, Loader=yaml.FullLoader)                                                                                                                                                               
 else:
-    with open(r'../session.yaml') as file:
+    with open(r'../session_local.yaml') as file:
         configs = yaml.load(file, Loader=yaml.FullLoader)
 
 sessionName = configs['sessionName']
@@ -63,26 +61,33 @@ else:
     device = 'cpu'
 
 env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
-env.reset_task('SPY.USUSD_Candlestick_1_M_01.01.2021-31.01.2021')
+train_tasks = configs['train_tasks']
+env.reset_task(*train_tasks)
 env = Monitor(env)
 model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
-num_episode_train = 3
+num_episode_train = configs['num_episode_train']
 model.learn(total_timesteps=num_episode_train * env.get_episodic_step(), log_interval=400)
-print(env.asset)
+logger.info("Evaluate training")
+obs = env.reset()
+done = False
+while(not done):
+    action, _ = model.predict(obs, deterministic=True)
+    obs, reward, done, info = env.step(action)
+    env.render()
+
 logger.info(f"env asset after training: {env.asset}")
+logger.csv(env.performance, "env asset after training")
 
 trading_env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
-trade_task = 'SPY.USUSD_Candlestick_1_M_01.02.2021-28.02.2021'
-trading_env.reset_task(trade_task)
+trade_tasks = configs['trade_tasks']
+trading_env.reset_task(*trade_tasks)
 obs = trading_env.reset()
 done = False 
 logger.info("Start trading")
-logger.info(f'trade task: {trade_task}')
+logger.info(f'trade task: {trade_tasks}')
 while(not done):
     action, _ = model.predict(obs, deterministic=True)
     obs, reward, done, info = trading_env.step(action)
     trading_env.render()
-    if done:
-      obs = trading_env.reset()
 
-logger.info(f"env asset after trading: {env.asset}")
+logger.info(f"env asset after trading: {trading_env.asset}")

@@ -20,9 +20,9 @@ class Logger(metaclass=Singleton):
         if sessionName is not None:
             if not os.path.exists('./logs/' + dirName):
                 os.makedirs("logs/" + dirName)     
-            self.log_path = './logs/' + dirName + '/' + fileName + '.log'
+            self.log_dir = './logs/' + dirName
             self.logger = logging.getLogger(sessionName)
-            fileHandler = logging.FileHandler(self.log_path, encoding='utf8')
+            fileHandler = logging.FileHandler(self.log_dir + '/' + fileName + '.log', encoding='utf8')
             formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
             fileHandler.setFormatter(formatter)
@@ -36,3 +36,12 @@ class Logger(metaclass=Singleton):
 
     def info(self, msg, *args):
         self.executor.submit(self.logger.info, msg, *args)
+
+    def csv(self, df, filename):
+        """logs a dataframe to csv format in log directory
+
+        Args:
+            df (_type_): dataframe
+            filename (_type_): filename with .csv included 
+        """        
+        df.to_csv(self.log_dir + '/' + filename)

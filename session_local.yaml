@@ -1,0 +1,7 @@
+sessionName: spdr500
+lag: 2
+num_episode_train: 2
+train_tasks:
+ - SPY.USUSD_Candlestick_1_M_TEST
+trade_tasks:
+ - SPY.USUSD_Candlestick_1_M_TEST

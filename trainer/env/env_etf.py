@@ -161,7 +161,7 @@ class EtfTradingEnv(gym.Env):
         self.step_idx = 0
         self.capital = self.start_capital
         self.asset = self.start_capital
-        self.performance = pd.DataFrame(index=np.arange(0, self.end_idx + 1), columns=('position', 'current_asset'))
+        self.performance = pd.DataFrame(index=np.arange(0, self.end_idx - self.lag), columns=('position', 'current_asset'))
         self.market_data_state = self.lagged_market_data(self.lag, self.lag)
 
         return np.hstack((
@@ -169,12 +169,12 @@ class EtfTradingEnv(gym.Env):
             self.normalize_window(self.market_data_state)
         ))
     
-    def render(self):
+    def render(self, mode='human'):
         if self.step_idx == 0:
             self.logger.info(self.env_name + " :: Start session with rendering")
 
-        self.performance.iloc[self.step_idx]['position'] = self.position
-        self.performance.iloc[self.step_idx]['current_asset'] = self.asset
+        self.performance.iloc[self.step_idx-1]['position'] = self.position
+        self.performance.iloc[self.step_idx-1]['current_asset'] = self.asset
     
     def lagged_market_data(self, curr_idx: int, lag: int):
         return self.data_df.iloc[curr_idx-lag: curr_idx+1].reset_index(inplace=False, drop=True).copy()
