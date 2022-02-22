@@ -1,7 +1,9 @@
 timestamp=$(date +"%m_%d_%y_%Hh%Mm%Ss")
 
+sessionName=$(grep 'sessionName:' session_remote.yaml | tail -n1 | awk '{ print $2}')
+
 BUCKET_NAME='fyp_job'
-JOB_NAME="spdr500_${timestamp}"
+JOB_NAME="${sessionName}_${timestamp}"
 JOB_DIR=gs://${BUCKET_NAME}/${JOB_NAME}
 echo $JOB_NAME
 
@@ -20,3 +22,4 @@ gcloud ai-platform jobs submit training ${JOB_NAME} --region=asia-east1 \
 --python-version 3.7 \
 -- \
 --remote
+--job-dir=${JOB_DIR}

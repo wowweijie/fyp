@@ -60,7 +60,7 @@ else:
     logger.info('No CUDA')
     device = 'cpu'
 
-env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
+env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'), max_order_val=configs['max_order_val'])
 train_tasks = configs['train_tasks']
 env.reset_task(*train_tasks)
 env = Monitor(env)
@@ -92,3 +92,12 @@ while(not done):
 
 logger.info(f"env asset after trading: {trading_env.asset}")
 logger.csv(env.performance, "trade_perf")
+
+if args.remote:
+    subprocess.call([
+        'gsutil', '-m', 'cp', '-r',
+        # logs
+        f'./logs/{sessionName}_{timestamp}/*',
+        # Jobs storage dir
+        f'{args.job_dir}/logs'
+    ])
