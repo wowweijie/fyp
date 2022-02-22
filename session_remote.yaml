@@ -1,9 +1,7 @@
 sessionName: spdr500
 lag: 4
-num_episode_train: 150
+num_episode_train: 20
 train_tasks:
  - 'SPY.USUSD_Candlestick_1_M_01.01.2021-31.01.2021'
- - 'SPY.USUSD_Candlestick_1_M_01.02.2021-28.02.2021'
- - 'SPY.USUSD_Candlestick_1_M_01.03.2021-31.03.2021'
 trade_tasks:
  - 'SPY.USUSD_Candlestick_1_M_01.04.2021-30.04.2021'
