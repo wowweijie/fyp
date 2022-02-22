@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from trainer.logger import Logger 
+from typing import Callable
 
 
 class EtfTradingEnv(gym.Env):
@@ -88,6 +89,7 @@ class EtfTradingEnv(gym.Env):
 
     def reset_task(self, *tasks):
         self.data_df = pd.concat([self.load_task(self.data_dir + '/' + task) for task in tasks])
+        self.data_feed_arr = self.generate_window(normalize_func=self.normalize_window)
         self.end_idx = self.data_df.shape[0] - 1
         self.bid_close_idx = self.data_df.columns.get_loc("bid_close")
         self.ask_close_idx = self.data_df.columns.get_loc("ask_close")
@@ -143,12 +145,15 @@ class EtfTradingEnv(gym.Env):
 
         self.market_data_state = self.next_lagged_data(self.market_data_state, next_market_data)
 
+        assert np.array_equal(self.data_feed_arr[self.step_idx],  self.normalize_window(self.market_data_state).to_numpy().flatten()), f"ERROR @ step {self.step_idx}"
+
         state = np.hstack((
             self.position,
-            self.normalize_window(self.market_data_state)
+            self.data_feed_arr[self.step_idx]
         ))
 
         if self.step_idx == 1:
+            self.logger.info("STEP-1 STATE")
             self.logger.info(state)
 
         return state, reward, done, dict()
@@ -164,10 +169,13 @@ class EtfTradingEnv(gym.Env):
         self.performance = pd.DataFrame(index=np.arange(0, self.end_idx - self.lag), columns=('position', 'current_asset'))
         self.market_data_state = self.lagged_market_data(self.lag, self.lag)
 
-        return np.hstack((
+        state = np.hstack((
             self.position,
-            self.normalize_window(self.market_data_state)
+            self.data_feed_arr[self.step_idx]
         ))
+        self.logger.info("STEP-0 STATE")
+        self.logger.info(state)
+        return state
     
     def render(self, mode='human'):
         if self.step_idx == 0:
@@ -196,7 +204,16 @@ class EtfTradingEnv(gym.Env):
         normalized_window['ask_high'] = normalized_window['ask_high'] - mean['ask_high']
         normalized_window['ask_low'] = normalized_window['ask_low'] - mean['ask_low']
         normalized_window['ask_close'] = normalized_window['ask_close'] - mean['ask_close']
-        return normalized_window.to_numpy().flatten()
+        return normalized_window
+
+    def generate_window(self, normalize_func: Callable):
+        nparray = np.zeros((len(self.data_df)-self.lag, 13*(self.lag+1)), dtype=float)
+        for i in range(len(self.data_df)-self.lag):
+            window_frame = self.data_df[i:i+self.lag+1]
+            if normalize_func is not None:
+                window_frame = self.normalize_window(window_frame)
+            nparray[i] = window_frame.to_numpy().flatten()
+        return nparray
 
     def get_episodic_step(self):
         return self.end_idx - self.lag + 1

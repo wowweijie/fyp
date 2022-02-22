@@ -76,7 +76,7 @@ while(not done):
     env.render()
 
 logger.info(f"env asset after training: {env.asset}")
-logger.csv(env.performance, "env asset after training")
+logger.csv(env.performance, "train_perf")
 
 trading_env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
 trade_tasks = configs['trade_tasks']
@@ -91,3 +91,4 @@ while(not done):
     trading_env.render()
 
 logger.info(f"env asset after trading: {trading_env.asset}")
+logger.csv(env.performance, "trade_perf")
