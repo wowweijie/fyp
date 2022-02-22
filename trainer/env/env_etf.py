@@ -100,23 +100,30 @@ class EtfTradingEnv(gym.Env):
         )
 
     def step(self, actions):
-        order_val = actions[0] * self.max_order_val
-        curr_asset = self.open_position_val + self.capital
+        bid_close = self.data_df.iloc[self.step_idx + self.lag, self.bid_close_idx]
+        ask_close = self.data_df.iloc[self.step_idx + self.lag, self.ask_close_idx]
+        max_buy_avail = self.asset // ask_close 
+        max_sell_avail = self.asset // bid_close
+        lower_thres = 0.05
+        upper_thres = 0.6
+        max_buy_avail = upper_thres * max_buy_avail
+        max_sell_avail = upper_thres * max_sell_avail
 
-        if order_val < -self.min_order_val:
-            bid_close = self.data_df.iloc[self.step_idx + self.lag, self.bid_close_idx]
-            if curr_asset > 0:
-                sell_qty = min(curr_asset, -order_val) // bid_close
-                self.capital += sell_qty * bid_close
-                self.position -= sell_qty
+        if actions[0] > lower_thres:
+            target_position = round(actions[0] * max_buy_avail)
 
-        elif order_val > self.min_order_val:
-            ask_close = self.data_df.iloc[self.step_idx + self.lag, self.ask_close_idx]
-            buy_qty = min(self.capital, order_val) // ask_close
-            self.position += buy_qty
+        elif actions[0] < -lower_thres:
+            target_position = round(actions[0] * max_sell_avail)
+
+        if target_position > self.position:
+            buy_qty = target_position - self.position
+            self.position = target_position
             self.capital -= buy_qty * ask_close
-        
-        
+
+        elif target_position < self.position:
+            sell_qty = self.position - target_position
+            self.position = target_position
+            self.capital += sell_qty * bid_close
 
         self.step_idx += 1
         next_market_data = self.data_df.iloc[self.step_idx + self.lag].to_numpy()
@@ -138,6 +145,7 @@ class EtfTradingEnv(gym.Env):
         else:
             self.open_position_val = 0
         
+        curr_asset = self.asset
         # self.asset is the next state asset
         self.asset = self.open_position_val + self.capital
         reward = self.asset - curr_asset
