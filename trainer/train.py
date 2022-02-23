@@ -60,7 +60,7 @@ else:
     logger.info('No CUDA')
     device = 'cpu'
 
-env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'), max_order_val=configs['max_order_val'])
+env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
 train_tasks = configs['train_tasks']
 env.reset_task(*train_tasks)
 env = Monitor(env)
