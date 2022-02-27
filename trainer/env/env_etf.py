@@ -108,6 +108,7 @@ class EtfTradingEnv(gym.Env):
         upper_thres = 0.6
         max_buy_avail = upper_thres * max_buy_avail
         max_sell_avail = upper_thres * max_sell_avail
+        target_position = self.position
 
         if actions[0] > lower_thres:
             target_position = round(actions[0] * max_buy_avail)
