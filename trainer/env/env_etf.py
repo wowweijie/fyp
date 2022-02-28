@@ -168,8 +168,9 @@ class EtfTradingEnv(gym.Env):
         return state, reward, done, dict()
     
     def reset(self):
-        self.logger.info("Environment Reset")
-        self.logger.info(self.__dict__)
+        if self.step_idx == 0:
+            self.logger.info("Environment Reset")
+            self.logger.info(self.__dict__)
         self.position = 0
         self.open_position_val = 0
         self.step_idx = 0
@@ -182,8 +183,7 @@ class EtfTradingEnv(gym.Env):
             self.position,
             self.data_feed_arr[self.step_idx]
         ))
-        self.logger.info("STEP-0 STATE")
-        self.logger.info(state)
+        
         return state
     
     def render(self, mode='human'):

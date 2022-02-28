@@ -13,7 +13,6 @@ class Singleton(type):
 class Logger(metaclass=Singleton):
     
     def __init__(self, sessionName=None, timestamp=None, fileName=None):
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         dirName = sessionName + '_' + timestamp if timestamp is not None else sessionName
         if fileName is None:
             fileName = "program"
@@ -35,7 +34,7 @@ class Logger(metaclass=Singleton):
         self.logger.setLevel(logging.INFO)
 
     def info(self, msg, *args):
-        self.executor.submit(self.logger.info, msg, *args)
+        self.logger.info(msg, *args)
 
     def csv(self, df, filename):
         """logs a dataframe to csv format in log directory
