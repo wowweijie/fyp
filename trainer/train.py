@@ -1,7 +1,6 @@
-from distutils.command.config import config
-from stable_baselines3 import A2C
 from stable_baselines3.common.monitor import Monitor
 from trainer.env.env_etf import EtfTradingEnv
+from trainer.algo.selector import RlAlgoSelector
 import os 
 import argparse
 import subprocess
@@ -65,7 +64,9 @@ env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/s
 train_tasks = configs['train_tasks']
 env.reset_task(*train_tasks)
 env = Monitor(env)
-model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
+# model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
+algo = configs['model']['algo']
+model = RlAlgoSelector.init(algo, policy='MlpPolicy', env=env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
 num_episode_train = configs['num_episode_train']
 start_learn = timer()
 model.learn(total_timesteps=num_episode_train * env.get_episodic_step(), log_interval=400)
