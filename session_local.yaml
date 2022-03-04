@@ -1,8 +1,9 @@
 sessionName: spdr500
 lag: 5
 num_episode_train: 20
-max_order_val: 100000
+model:
+  algo: TRPO
 train_tasks:
- - SPY.USUSD_Candlestick_1_M_01.01.2021-31.01.2021
+ - SPY.USUSD_Candlestick_1_M_TEST
 trade_tasks:
  - SPY.USUSD_Candlestick_1_M_01.04.2021-30.04.2021

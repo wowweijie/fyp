@@ -7,6 +7,7 @@ import subprocess
 import torch
 import yaml
 from trainer.logger import Logger
+from trainer.utils import action_mask
 from datetime import datetime
 import pytz
 from timeit import default_timer as timer
@@ -80,23 +81,44 @@ while(not done):
     obs, reward, done, info = env.step(action)
     env.render()
 
-logger.info(f"env asset after training: {env.asset}")
-logger.csv(env.performance, "train_perf")
+logger.info(f"env asset after training without mask: {env.asset}")
+logger.csv(env.performance, "train_perf_no_mask")
+
+obs = env.reset()
+done = False
+while(not done):
+    action, _ = model.predict(obs, deterministic=True)
+    action_mask(action, configs['action_mask']['upper_thres'], configs['action_mask']['upper_thres'])    
+    obs, reward, done, info = env.step(action)
+    env.render()
+
+logger.info(f"env asset after training with mask: {env.asset}")
+logger.csv(env.performance, "train_perf_with_mask")
 
 trading_env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
 trade_tasks = configs['trade_tasks']
 trading_env.reset_task(*trade_tasks)
-obs = trading_env.reset()
-done = False 
 logger.info("Start trading")
 logger.info(f'trade task: {trade_tasks}')
+obs = trading_env.reset()
+done = False 
 while(not done):
     action, _ = model.predict(obs, deterministic=True)
     obs, reward, done, info = trading_env.step(action)
     trading_env.render()
 
-logger.info(f"env asset after trading: {trading_env.asset}")
-logger.csv(env.performance, "trade_perf")
+logger.info(f"env asset after trading without mask: {trading_env.asset}")
+logger.csv(env.performance, "trade_perf_no_mask")
+
+obs = trading_env.reset()
+done = False 
+while(not done):
+    action, _ = model.predict(obs, deterministic=True)
+    obs, reward, done, info = trading_env.step(action)
+    trading_env.render()
+
+logger.info(f"env asset after trading with mask: {trading_env.asset}")
+logger.csv(env.performance, "trade_perf_with_mask")
 
 if args.remote:
     subprocess.call([
