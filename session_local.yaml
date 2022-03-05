@@ -3,6 +3,9 @@ lag: 5
 num_episode_train: 20
 model:
   algo: TRPO
+action_mask:
+  upper_thres: 0.25
+  lower_thres: 0.25
 train_tasks:
  - SPY.USUSD_Candlestick_1_M_TEST
 trade_tasks:

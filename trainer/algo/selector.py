@@ -1,5 +1,5 @@
 from stable_baselines3 import A2C, PPO
-from sb3_contrib import TRPO
+from trainer.sb3_contrib.trpo.trpo import TRPO
 
 class RlAlgoSelector():
     @classmethod

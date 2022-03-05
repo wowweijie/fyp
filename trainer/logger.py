@@ -35,6 +35,9 @@ class Logger(metaclass=Singleton):
 
     def info(self, msg, *args):
         self.logger.info(msg, *args)
+    
+    def error(self, msg, *args):
+        self.logger.error(msg, *args)
 
     def csv(self, df, filename):
         """logs a dataframe to csv format in log directory
@@ -44,3 +47,6 @@ class Logger(metaclass=Singleton):
             filename (_type_): filename with .csv included 
         """        
         df.to_csv(self.log_dir + '/' + filename)
+    
+    def save_model(self, model):
+        model.save(self.log_dir + '/' + model.__name__)

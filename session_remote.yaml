@@ -1,6 +1,11 @@
 sessionName: spdr500
 lag: 4
 num_episode_train: 50
+model:
+  algo: TRPO
+action_mask:
+  upper_thres: 0.25
+  lower_thres: 0.25
 train_tasks:
  - SPY.USUSD_Candlestick_1_M_01.03.2021-31.03.2021
 trade_tasks:

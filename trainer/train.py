@@ -73,6 +73,7 @@ start_learn = timer()
 model.learn(total_timesteps=num_episode_train * env.get_episodic_step(), log_interval=400)
 end_learn = timer()
 logger.info(f"train time: {end_learn - start_learn}")
+logger.save_model(model)
 logger.info("Evaluate training")
 obs = env.reset()
 done = False
@@ -88,7 +89,7 @@ obs = env.reset()
 done = False
 while(not done):
     action, _ = model.predict(obs, deterministic=True)
-    action_mask(action, configs['action_mask']['upper_thres'], configs['action_mask']['upper_thres'])    
+    action_mask(action, configs['action_mask']['upper_thres'], configs['action_mask']['lower_thres'])    
     obs, reward, done, info = env.step(action)
     env.render()
 
@@ -108,17 +109,18 @@ while(not done):
     trading_env.render()
 
 logger.info(f"env asset after trading without mask: {trading_env.asset}")
-logger.csv(env.performance, "trade_perf_no_mask")
+logger.csv(trading_env.performance, "trade_perf_no_mask")
 
 obs = trading_env.reset()
 done = False 
 while(not done):
     action, _ = model.predict(obs, deterministic=True)
+    action_mask(action, configs['action_mask']['upper_thres'], configs['action_mask']['lower_thres'])
     obs, reward, done, info = trading_env.step(action)
     trading_env.render()
 
 logger.info(f"env asset after trading with mask: {trading_env.asset}")
-logger.csv(env.performance, "trade_perf_with_mask")
+logger.csv(trading_env.performance, "trade_perf_with_mask")
 
 if args.remote:
     subprocess.call([
