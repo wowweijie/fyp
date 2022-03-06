@@ -49,4 +49,4 @@ class Logger(metaclass=Singleton):
         df.to_csv(self.log_dir + '/' + filename)
     
     def save_model(self, model):
-        model.save(self.log_dir + '/' + model.__name__)
+        model.save(self.log_dir + '/' + type(model).__name__)

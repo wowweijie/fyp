@@ -42,8 +42,8 @@ class EtfTradingEnv(gym.Env):
         self.capital = self.start_capital
         self.asset = self.start_capital
 
-    def sample_tasks(self, num_tasks):
-        return np.random.choice(np.array(os.listdir(self.data_dir)), size=num_tasks, replace=False)
+    def sample_tasks(self):
+        return np.random.choice(self.task_distribution, size=len(self.task_distribution), replace=True)
     
     def load_data(self, filepath: str, askOrBid: str):
         header_list = ['Gmt time', 'Open', 'High', 'Low', 'Close', 'Volume']
@@ -98,6 +98,9 @@ class EtfTradingEnv(gym.Env):
         self.observation_space = gym.spaces.Box(
             low=-np.inf, high=np.inf, shape=((1 + self.lag) * market_data_dim + 1,)
         )
+    
+    def set_task_distribution(self, *tasks):
+        self.task_distribution = tasks
 
     def step(self, actions):
         bid_close = self.data_df.iloc[self.step_idx + self.lag, self.bid_close_idx]

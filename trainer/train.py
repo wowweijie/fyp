@@ -6,6 +6,7 @@ import argparse
 import subprocess
 import torch
 import yaml
+import sys
 from trainer.logger import Logger
 from trainer.utils import action_mask
 from datetime import datetime
@@ -46,6 +47,8 @@ else:
     with open(r'../session_local.yaml') as file:
         configs = yaml.load(file, Loader=yaml.FullLoader)
 
+globals()['configs'] = configs
+
 sessionName = configs['sessionName']
 
 timestamp = datetime.now(pytz.timezone('Asia/Singapore')).strftime("%d_%m_%H-%M-%S")
@@ -61,9 +64,19 @@ else:
     logger.info('No CUDA')
     device = 'cpu'
 
+globals()['device'] = device
+
 env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
 train_tasks = configs['train_tasks']
-env.reset_task(*train_tasks)
+if configs['model'].get('maml') is None and train_tasks:
+    env.reset_task(*train_tasks)
+elif configs['model'].get('maml') and train_tasks:
+    env.set_task_distribution(*train_tasks)
+    logger.info('Task distribution set up')
+else:
+    logger.error('train_tasks must be in config')
+    sys.exit()
+
 env = Monitor(env)
 # model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
 algo = configs['model']['algo']
