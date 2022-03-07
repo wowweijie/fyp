@@ -1,6 +1,7 @@
 from stable_baselines3.common.monitor import Monitor
 from trainer.env.env_etf import EtfTradingEnv
 from trainer.algo.selector import RlAlgoSelector
+from trainer.configs import Config
 import os 
 import argparse
 import subprocess
@@ -48,6 +49,7 @@ else:
         configs = yaml.load(file, Loader=yaml.FullLoader)
 
 globals()['configs'] = configs
+Config.set_configs(configs)
 
 sessionName = configs['sessionName']
 

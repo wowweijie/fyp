@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from trainer.logger import Logger 
 from typing import Callable
+from trainer.configs import Config
 
 
 class EtfTradingEnv(gym.Env):
@@ -19,8 +20,9 @@ class EtfTradingEnv(gym.Env):
         min_order_val=10,
         max_order_val=1000,
         data_dir='./data/spdr500',
-        start_capital=10**6
+        start_capital=10**6,
     ):
+        self.configs = Config.configs['env']
         self.env_name = env_name,
         self.lag = lag
         self.reward_scaling = reward_scaling
@@ -29,6 +31,9 @@ class EtfTradingEnv(gym.Env):
         self.max_order_val = max_order_val
         self.data_dir = data_dir
         self.start_capital = start_capital
+        self.lower_thres=self.configs['lower_thres']
+        self.upper_thres=self.configs['upper_thres']
+        self.penalty_multiplier=self.configs['penalty_multiplier']
         
         # state: position, bid ohlc, ask ohlc, dayOfWeek, timeOfDay, volume 
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(1,))
@@ -107,16 +112,14 @@ class EtfTradingEnv(gym.Env):
         ask_close = self.data_df.iloc[self.step_idx + self.lag, self.ask_close_idx]
         max_buy_avail = self.asset // ask_close 
         max_sell_avail = self.asset // bid_close
-        lower_thres = 0.05
-        upper_thres = 0.6
-        max_buy_avail = upper_thres * max_buy_avail
-        max_sell_avail = upper_thres * max_sell_avail
+        max_buy_avail = self.upper_thres * max_buy_avail
+        max_sell_avail = self.upper_thres * max_sell_avail
         target_position = self.position
 
-        if actions[0] > lower_thres:
+        if actions[0] > self.lower_thres:
             target_position = round(actions[0] * max_buy_avail)
 
-        elif actions[0] < -lower_thres:
+        elif actions[0] < -self.lower_thres:
             target_position = round(actions[0] * max_sell_avail)
 
         if target_position > self.position:
@@ -153,6 +156,8 @@ class EtfTradingEnv(gym.Env):
         # self.asset is the next state asset
         self.asset = self.open_position_val + self.capital
         reward = self.asset - curr_asset
+        if reward < 0:
+            reward *= self.penalty_multiplier
         done = self.step_idx + self.lag == self.end_idx
 
         self.market_data_state = self.next_lagged_data(self.market_data_state, next_market_data)
