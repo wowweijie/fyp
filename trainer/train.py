@@ -66,7 +66,8 @@ else:
     logger.info('No CUDA')
     device = 'cpu'
 
-globals()['device'] = device
+Config.configs['device'] = device
+Config.configs['model']['maml']['device'] = device
 
 env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
 train_tasks = configs['train_tasks']
