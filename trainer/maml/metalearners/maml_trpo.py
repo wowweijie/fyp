@@ -65,7 +65,6 @@ class MAMLTRPO(GradientBasedMetaLearner):
                                     hidden_sizes=self.configs['hidden-sizes'],
                                     nonlinearity=self.configs['nonlinearity'])
         policy.share_memory()
-        policy.double()
         super(MAMLTRPO, self).__init__(policy, env, device=device)
         self.logger = logger
         self.fast_lr = fast_lr
@@ -236,7 +235,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
     
     def predict(self, observations: np.ndarray, **kwargs):
         with torch.no_grad():
-            observations_tensor = torch.from_numpy(observations)
+            observations_tensor = torch.from_numpy(observations).float()
             pi = self.policy(observations_tensor)
             actions_tensor = pi.sample()
             actions = actions_tensor.cpu().numpy()
