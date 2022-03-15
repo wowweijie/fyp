@@ -1,7 +1,8 @@
 from stable_baselines3 import A2C, PPO
 from trainer.sb3_contrib.trpo.trpo import TRPO
-# from trainer.maml.metalearners.maml_trpo import MAMLTRPO
-# from trainer.logger import Logger
+from trainer.maml.metalearners.maml_trpo import MAMLTRPO
+from trainer.logger import Logger
+from trainer.configs import Config
 
 class RlAlgoSelector():
     @classmethod
@@ -12,5 +13,5 @@ class RlAlgoSelector():
             return PPO(**kwargs)
         elif algo_name == 'TRPO':
             return TRPO(**kwargs)
-        # elif algo_name == 'MAMLTRPO':
-        #     return MAMLTRPO(env=kwargs['env'], logger = Logger())
+        elif algo_name == 'MAMLTRPO':
+            return MAMLTRPO(env=kwargs['env'], logger = Logger(), device=Config.configs['device'])

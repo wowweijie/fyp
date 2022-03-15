@@ -47,8 +47,8 @@ class EtfTradingEnv(gym.Env):
         self.capital = self.start_capital
         self.asset = self.start_capital
 
-    def sample_tasks(self):
-        return np.random.choice(self.task_distribution, size=len(self.task_distribution), replace=True)
+    def sample_tasks(self, num_tasks):
+        return np.random.choice(self.task_distribution, size=num_tasks, replace=True)
     
     def load_data(self, filepath: str, askOrBid: str):
         header_list = ['Gmt time', 'Open', 'High', 'Low', 'Close', 'Volume']
@@ -94,6 +94,7 @@ class EtfTradingEnv(gym.Env):
 
     def reset_task(self, *tasks):
         self.data_df = pd.concat([self.load_task(self.data_dir + '/' + task) for task in tasks])
+        self.data_df = self.data_df.dropna()
         self.data_feed_arr = self.generate_window(normalize_func=self.normalize_window)
         self.end_idx = self.data_df.shape[0] - 1
         self.bid_close_idx = self.data_df.columns.get_loc("bid_close")
@@ -106,6 +107,9 @@ class EtfTradingEnv(gym.Env):
     
     def set_task_distribution(self, *tasks):
         self.task_distribution = tasks
+
+        # for the sake of instantiating observation dimensions etc
+        self.reset_task(tasks[0])
 
     def step(self, actions):
         bid_close = self.data_df.iloc[self.step_idx + self.lag, self.bid_close_idx]
@@ -210,17 +214,14 @@ class EtfTradingEnv(gym.Env):
         return curr_lagged_data
 
     def normalize_window(self, sliding_window: pd.DataFrame):
-        mean = sliding_window.mean()
-        normalized_window = sliding_window.copy()
-        normalized_window['bid_open'] = normalized_window['bid_open'] - mean['bid_open']
-        normalized_window['bid_high'] = normalized_window['bid_high'] - mean['bid_high']
-        normalized_window['bid_low'] = normalized_window['bid_low'] - mean['bid_low']
-        normalized_window['bid_close'] = normalized_window['bid_close'] - mean['bid_close']
-
-        normalized_window['ask_open'] = normalized_window['ask_open'] - mean['ask_open']
-        normalized_window['ask_high'] = normalized_window['ask_high'] - mean['ask_high']
-        normalized_window['ask_low'] = normalized_window['ask_low'] - mean['ask_low']
-        normalized_window['ask_close'] = normalized_window['ask_close'] - mean['ask_close']
+        normalized_window = sliding_window[['bid_open','bid_high','bid_low','bid_close','bid_vol',
+        'ask_open','ask_high','ask_low','ask_close','ask_vol']].copy()
+        mean = normalized_window.mean()
+        normalized_window -= mean
+        normalized_window /= mean
+        normalized_window.insert(0, 'dayWeek', sliding_window['dayWeek'])
+        normalized_window.insert(1, 'minute', sliding_window['minute'])
+        normalized_window.insert(2, 'hour', sliding_window['hour'])
         return normalized_window
 
     def generate_window(self, normalize_func: Callable):
@@ -233,7 +234,7 @@ class EtfTradingEnv(gym.Env):
         return nparray
 
     def get_episodic_step(self):
-        return self.end_idx - self.lag + 1
+        return self.end_idx - self.lag
 
         
 

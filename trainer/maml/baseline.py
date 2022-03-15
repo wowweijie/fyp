@@ -12,9 +12,10 @@ class LinearFeatureBaseline(nn.Module):
         "Benchmarking Deep Reinforcement Learning for Continuous Control", 2016 
         (https://arxiv.org/abs/1604.06778)
     """
-    def __init__(self, input_size, reg_coeff=1e-5):
+    def __init__(self, input_size, device, reg_coeff=1e-5):
         super(LinearFeatureBaseline, self).__init__()
         self.input_size = input_size
+        self.device = device
         self._reg_coeff = reg_coeff
 
         self.weight = nn.Parameter(torch.Tensor(self.feature_size,),
@@ -22,7 +23,7 @@ class LinearFeatureBaseline(nn.Module):
         self.weight.data.zero_()
         self._eye = torch.eye(self.feature_size,
                               dtype=torch.float32,
-                              device=self.weight.device)
+                              device=self.device)
 
     @property
     def feature_size(self):
@@ -31,7 +32,7 @@ class LinearFeatureBaseline(nn.Module):
     def _feature(self, episodes):
         ones = episodes.mask.unsqueeze(2)
         observations = episodes.observations
-        time_step = torch.arange(len(episodes)).view(-1, 1, 1) * ones / 100.0
+        time_step = torch.arange(len(episodes), device=self.device).view(-1, 1, 1) * ones / 100.0
 
         return torch.cat([
             observations,

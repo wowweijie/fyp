@@ -7,10 +7,10 @@ import time
 from datetime import datetime, timezone
 from copy import deepcopy
 
-from maml_rl.samplers.sampler import Sampler, make_env
-from maml_rl.envs.utils.sync_vector_env import SyncVectorEnv
-from maml_rl.episode import BatchEpisodes
-from maml_rl.utils.reinforcement_learning import reinforce_loss
+from trainer.maml.samplers.sampler import Sampler, make_env
+from trainer.maml.envs.utils.sync_vector_env import SyncVectorEnv
+from trainer.maml.episode import BatchEpisodes
+from trainer.maml.utils.reinforcement_learning import reinforce_loss
 
 
 def _create_consumer(queue, futures, loop=None):
@@ -65,20 +65,16 @@ class MultiTaskSampler(Sampler):
         and can scale with the amount of CPUs available instead.
     """
     def __init__(self,
-                 env_name,
-                 env_kwargs,
+                 env,
                  batch_size,
                  policy,
                  baseline,
-                 env=None,
                  seed=None,
                  num_workers=1):
-        super(MultiTaskSampler, self).__init__(env_name,
-                                               env_kwargs,
+        super(MultiTaskSampler, self).__init__(env,
                                                batch_size,
                                                policy,
-                                               seed=seed,
-                                               env=env)
+                                               seed=seed)
 
         self.num_workers = num_workers
 
@@ -88,8 +84,7 @@ class MultiTaskSampler(Sampler):
         policy_lock = mp.Lock()
 
         self.workers = [SamplerWorker(index,
-                                      env_name,
-                                      env_kwargs,
+                                      env,
                                       batch_size,
                                       self.env.observation_space,
                                       self.env.action_space,
@@ -212,8 +207,7 @@ class MultiTaskSampler(Sampler):
 class SamplerWorker(mp.Process):
     def __init__(self,
                  index,
-                 env_name,
-                 env_kwargs,
+                 env,
                  batch_size,
                  observation_space,
                  action_space,
@@ -224,11 +218,11 @@ class SamplerWorker(mp.Process):
                  train_queue,
                  valid_queue,
                  policy_lock):
-        super(SamplerWorker, self).__init__()
+        super(SamplerWorker, self).__init__(name=f"worker_{index}")
 
-        env_fns = [make_env(env_name, env_kwargs=env_kwargs)
+        envs = [deepcopy(env)
                    for _ in range(batch_size)]
-        self.envs = SyncVectorEnv(env_fns,
+        self.envs = SyncVectorEnv(envs,
                                   observation_space=observation_space,
                                   action_space=action_space)
         self.envs.seed(None if (seed is None) else seed + index * batch_size)

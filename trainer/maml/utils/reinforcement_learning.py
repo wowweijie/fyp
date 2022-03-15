@@ -27,6 +27,7 @@ def get_returns(episodes):
     return to_numpy([episode.rewards.sum(dim=0) for episode in episodes])
 
 def reinforce_loss(policy, episodes, params=None):
+    policy.optimizer.zero_grad()
     pi = policy(episodes.observations.view((-1, *episodes.observation_shape)),
                 params=params)
 

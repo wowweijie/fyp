@@ -1,15 +1,21 @@
 import torch
+import numpy as np
 
 from torch.nn.utils.convert_parameters import parameters_to_vector
 from torch.distributions.kl import kl_divergence
+from tqdm import trange
 
-from maml_rl.samplers import MultiTaskSampler
-from maml_rl.metalearners.base import GradientBasedMetaLearner
-from maml_rl.utils.torch_utils import (weighted_mean, detach_distribution,
+from trainer.maml.samplers.multi_task_sampler import MultiTaskSampler
+from trainer.maml.metalearners.base import GradientBasedMetaLearner
+from trainer.maml.utils.torch_utils import (weighted_mean, detach_distribution,
                                        to_numpy, vector_to_parameters)
-from maml_rl.utils.optimization import conjugate_gradient
-from maml_rl.utils.reinforcement_learning import reinforce_loss
+from trainer.maml.utils.optimization import conjugate_gradient
+from trainer.maml.utils.reinforcement_learning import reinforce_loss, get_returns
+from trainer.maml.utils.helpers import get_policy_for_env, get_input_size
+from trainer.maml.baseline import LinearFeatureBaseline
+from trainer.configs import Config
 
+from collections import OrderedDict
 
 class MAMLTRPO(GradientBasedMetaLearner):
     """Model-Agnostic Meta-Learning (MAML, [1]) for Reinforcement Learning
@@ -48,11 +54,19 @@ class MAMLTRPO(GradientBasedMetaLearner):
            Machine Learning (ICML) (https://arxiv.org/abs/1502.05477)
     """
     def __init__(self,
-                 policy,
+                 env,
+                 logger,
                  fast_lr=0.5,
                  first_order=False,
                  device='cpu'):
-        super(MAMLTRPO, self).__init__(policy, device=device)
+        self.configs = Config.configs['model']['maml']
+        # Policy
+        policy = get_policy_for_env(env,
+                                    hidden_sizes=self.configs['hidden-sizes'],
+                                    nonlinearity=self.configs['nonlinearity'])
+        policy.share_memory()
+        super(MAMLTRPO, self).__init__(policy, env, device=device)
+        self.logger = logger
         self.fast_lr = fast_lr
         self.first_order = first_order
 
@@ -112,7 +126,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
 
     def step(self,
              train_futures,
-             valid_futures,0
+             valid_futures,
              max_kl=1e-3,
              cg_iters=10,
              cg_damping=1e-2,
@@ -175,3 +189,55 @@ class MAMLTRPO(GradientBasedMetaLearner):
             vector_to_parameters(old_params, self.policy.parameters())
 
         return logs
+
+    def learn(self, **kwargs):
+
+        num_batches = self.configs['num_batches']
+        num_episodes = num_batches * self.configs['fast-batch-size'] * self.configs['meta-batch-size']
+        self.logger.info(f"num_episodes: {num_episodes}")
+
+        self.logger.info(f"num_batches for metatraining: {num_batches}")
+
+        # Baseline
+        baseline = LinearFeatureBaseline(get_input_size(self.env), device=self.configs['device'])
+
+        # Sampler
+        sampler = MultiTaskSampler(env=self.env,
+                                batch_size=self.configs['fast-batch-size'],
+                                policy=self.policy,
+                                baseline=baseline,
+                                seed=self.configs['seed'],
+                                num_workers=self.configs['num-workers'])
+        
+        num_iterations = 0
+        for batch in trange(int(num_batches)):
+            tasks = sampler.sample_tasks(num_tasks=self.configs['meta-batch-size'])
+            futures = sampler.sample_async(tasks,
+                                       num_steps=self.configs['num-steps'],
+                                       fast_lr=self.configs['fast-lr'],
+                                       gamma=self.configs['gamma'],
+                                       gae_lambda=self.configs['gae-lambda'],
+                                       device=self.configs['device'])
+            logs = self.step(*futures,
+                                max_kl=self.configs['max-kl'],
+                                cg_iters=self.configs['cg-iters'],
+                                cg_damping=self.configs['cg-damping'],
+                                ls_max_steps=self.configs['ls-max-steps'],
+                                ls_backtrack_ratio=self.configs['ls-backtrack-ratio'])
+            
+            train_episodes, valid_episodes = sampler.sample_wait(futures)
+            num_iterations += sum(sum(episode.lengths) for episode in train_episodes[0])
+            num_iterations += sum(sum(episode.lengths) for episode in valid_episodes)
+            logs.update(tasks=tasks,
+                    num_iterations=num_iterations,
+                    train_returns=get_returns(train_episodes[0]),
+                    valid_returns=get_returns(valid_episodes))
+    
+    def predict(self, observations: np.ndarray, **kwargs):
+        with torch.no_grad():
+            observations_tensor = torch.from_numpy(observations)
+            pi = self.policy(observations_tensor)
+            actions_tensor = pi.sample()
+            actions = actions_tensor.cpu().numpy()
+            return actions, None
+

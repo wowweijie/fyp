@@ -3,6 +3,9 @@ import concurrent.futures
 import os
 import sys
 
+from torch import save
+from trainer.maml.metalearners.maml_trpo import MAMLTRPO
+
 class Singleton(type):
     _instances = {}
     def __call__(cls, *args, **kwargs):
@@ -49,4 +52,8 @@ class Logger(metaclass=Singleton):
         df.to_csv(self.log_dir + '/' + filename)
     
     def save_model(self, model):
-        model.save(self.log_dir + '/' + type(model).__name__)
+        if isinstance(model, MAMLTRPO):
+            with open(self.log_dir + '/maml_policy', 'wb') as f:
+                save(model.policy.state_dict(), f)
+        else:
+            model.save(self.log_dir + '/' + type(model).__name__)

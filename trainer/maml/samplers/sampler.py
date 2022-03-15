@@ -10,20 +10,13 @@ def make_env(env_name, env_kwargs={}, seed=None):
 
 class Sampler(object):
     def __init__(self,
-                 env_name,
-                 env_kwargs,
+                 env,
                  batch_size,
                  policy,
-                 seed=None,
-                 env=None):
-        self.env_name = env_name
-        self.env_kwargs = env_kwargs
+                 seed=None):
         self.batch_size = batch_size
         self.policy = policy
         self.seed = seed
-
-        if env is None:
-            env = gym.make(env_name, **env_kwargs)
         self.env = env
         if hasattr(self.env, 'seed'):
             self.env.seed(seed)

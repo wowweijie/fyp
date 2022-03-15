@@ -60,7 +60,7 @@ if __name__ == '__main__':
     logger.info(yaml.dump(configs))
 
     cuda_availability = torch.cuda.is_available()
-    if cuda_availability:
+    if cuda_availability and not configs['force-cpu']:
         logger.info('CUDA enabled')
         device = torch.device('cuda:{}'.format(torch.cuda.current_device()))
     else:
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     Config.configs['device'] = device
     Config.configs['model']['maml']['device'] = device
 
-    env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
+    env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, f"data/{configs['sessionName']}"))
     train_tasks = configs['train_tasks']
     if configs['model'].get('maml') is None and train_tasks:
         env.reset_task(*train_tasks)

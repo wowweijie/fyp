@@ -20,9 +20,15 @@ class NormalMLPPolicy(Policy):
                  hidden_sizes=(),
                  nonlinearity=F.relu,
                  init_std=1.0,
-                 min_std=1e-6):
+                 min_std=1e-6,
+                 max_grad_norm=0.5,
+                 optimizer_class=torch.optim.Adam,
+                 optimizer_kwargs={"eps":1e-5}):
         super(NormalMLPPolicy, self).__init__(input_size=input_size,
-                                              output_size=output_size)
+                                              output_size=output_size,
+                                              optimizer_class=optimizer_class,
+                                              optimizer_kwargs=optimizer_kwargs,
+                                              max_grad_norm=max_grad_norm)
         self.hidden_sizes = hidden_sizes
         self.nonlinearity = nonlinearity
         self.min_log_std = math.log(min_std)
@@ -38,6 +44,8 @@ class NormalMLPPolicy(Policy):
         self.sigma.data.fill_(math.log(init_std))
 
         self.apply(weight_init)
+
+        self.build_optimizer(optimizer_class, optimizer_kwargs)
 
     def forward(self, input, params=None):
         if params is None:
