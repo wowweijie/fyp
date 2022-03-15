@@ -65,6 +65,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
                                     hidden_sizes=self.configs['hidden-sizes'],
                                     nonlinearity=self.configs['nonlinearity'])
         policy.share_memory()
+        policy.double()
         super(MAMLTRPO, self).__init__(policy, env, device=device)
         self.logger = logger
         self.fast_lr = fast_lr
