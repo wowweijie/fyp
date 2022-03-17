@@ -26,13 +26,11 @@
             "type": "docker",
             "request": "launch",
             "preLaunchTask": "docker-run: debug gpu",
-            "cwd": "${workspaceFolder}/trainer",
-            "env": {"PYTHONPATH" : "${workspaceRoot}"},
             "python": {
                 "pathMappings": [
                     {
                         "localRoot": "${workspaceFolder}/trainer",
-                        "remoteRoot": "/root/code/trainer"
+                        "remoteRoot": "/root/trainer"
                     }
                 ],
                 "projectType": "general",
