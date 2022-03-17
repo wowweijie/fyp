@@ -21,6 +21,7 @@ class EtfTradingEnv(gym.Env):
         max_order_val=1000,
         data_dir='./data/spdr500',
         start_capital=10**6,
+        task_distribution=None,
     ):
         self.configs = Config.configs['env']
         self.env_name = env_name,
@@ -39,6 +40,12 @@ class EtfTradingEnv(gym.Env):
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(1,))
 
         self.logger = Logger()
+
+        if task_distribution is not None:
+            self.task_distribution = task_distribution
+
+            # for the sake of instantiating observation dimensions etc
+            self.reset_task(task_distribution[0])
 
         # reset
         self.position = 0

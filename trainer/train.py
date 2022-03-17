@@ -14,6 +14,8 @@ from datetime import datetime
 import pytz
 from timeit import default_timer as timer
 
+print(f"system info: {sys.version}")
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--remote', action="store_true", help='specify whether training is done on gcloud')
@@ -69,7 +71,8 @@ if __name__ == '__main__':
 
     Config.configs['device'] = device
     Config.configs['model']['maml']['device'] = device
-
+ 
+    env_configs = {'lag': configs['lag'], 'data_dir': os.path.join(DATA_PATH, f"data/{configs['sessionName']}"), 'task_distribution': configs['train_tasks']}
     env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, f"data/{configs['sessionName']}"))
     train_tasks = configs['train_tasks']
     if configs['model'].get('maml') is None and train_tasks:
@@ -81,10 +84,10 @@ if __name__ == '__main__':
         logger.error('train_tasks must be in config')
         sys.exit()
 
-    env = Monitor(env)
+    # env = Monitor(env)
     # model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
     algo = configs['model']['algo']
-    model = RlAlgoSelector.init(algo, policy='MlpPolicy', env=env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
+    model = RlAlgoSelector.init(algo, policy='MlpPolicy', env=env, env_kwargs=env_configs, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
     num_episode_train = configs['num_episode_train']
     start_learn = timer()
     model.learn(total_timesteps=num_episode_train * env.get_episodic_step(), log_interval=400)

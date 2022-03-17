@@ -20,6 +20,24 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "name": "docker_gpu",
+            "type": "docker",
+            "request": "launch",
+            "preLaunchTask": "docker-run: debug gpu",
+            "cwd": "${workspaceFolder}/trainer",
+            "env": {"PYTHONPATH" : "${workspaceRoot}"},
+            "python": {
+                "pathMappings": [
+                    {
+                        "localRoot": "${workspaceFolder}/trainer",
+                        "remoteRoot": "/root/code/trainer"
+                    }
+                ],
+                "projectType": "general",
+                "justMyCode": false
+            }
+        },
     ]
 }

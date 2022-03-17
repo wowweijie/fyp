@@ -66,6 +66,7 @@ class MultiTaskSampler(Sampler):
     """
     def __init__(self,
                  env,
+                 env_kwargs,
                  batch_size,
                  policy,
                  baseline,
@@ -85,6 +86,7 @@ class MultiTaskSampler(Sampler):
 
         self.workers = [SamplerWorker(index,
                                       env,
+                                      env_kwargs,
                                       batch_size,
                                       self.env.observation_space,
                                       self.env.action_space,
@@ -208,6 +210,7 @@ class SamplerWorker(mp.Process):
     def __init__(self,
                  index,
                  env,
+                 env_kwargs,
                  batch_size,
                  observation_space,
                  action_space,
@@ -220,7 +223,7 @@ class SamplerWorker(mp.Process):
                  policy_lock):
         super(SamplerWorker, self).__init__(name=f"worker_{index}")
 
-        envs = [deepcopy(env)
+        envs = [make_env(type(env), env_kwargs)
                    for _ in range(batch_size)]
         self.envs = SyncVectorEnv(envs,
                                   observation_space=observation_space,

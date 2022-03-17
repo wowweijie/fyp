@@ -3,7 +3,6 @@ import numpy as np
 
 from torch.nn.utils.convert_parameters import parameters_to_vector
 from torch.distributions.kl import kl_divergence
-from tqdm import trange
 
 from trainer.maml.samplers.multi_task_sampler import MultiTaskSampler
 from trainer.maml.metalearners.base import GradientBasedMetaLearner
@@ -55,6 +54,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
     """
     def __init__(self,
                  env,
+                 env_kwargs,
                  logger,
                  fast_lr=0.5,
                  first_order=False,
@@ -66,6 +66,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
                                     nonlinearity=self.configs['nonlinearity'])
         policy.share_memory()
         super(MAMLTRPO, self).__init__(policy, env, device=device)
+        self.env_kwargs = env_kwargs
         self.logger = logger
         self.fast_lr = fast_lr
         self.first_order = first_order
@@ -203,6 +204,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
 
         # Sampler
         sampler = MultiTaskSampler(env=self.env,
+                                env_kwargs=self.env_kwargs,
                                 batch_size=self.configs['fast-batch-size'],
                                 policy=self.policy,
                                 baseline=baseline,
@@ -210,7 +212,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
                                 num_workers=self.configs['num-workers'])
         
         num_iterations = 0
-        for batch in trange(int(num_batches)):
+        for batch in range(int(num_batches)):
             tasks = sampler.sample_tasks(num_tasks=self.configs['meta-batch-size'])
             futures = sampler.sample_async(tasks,
                                        num_steps=self.configs['num-steps'],
