@@ -201,6 +201,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
 
         # Baseline
         baseline = LinearFeatureBaseline(get_input_size(self.env), device=self.configs['device'])
+        baseline.to(device = self.configs['device'])
 
         # Sampler
         sampler = MultiTaskSampler(env=self.env,
@@ -219,7 +220,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
                                        fast_lr=self.configs['fast-lr'],
                                        gamma=self.configs['gamma'],
                                        gae_lambda=self.configs['gae-lambda'],
-                                       device=self.configs['device'])
+                                       device=Config.configs['device'])
             logs = self.step(*futures,
                                 max_kl=self.configs['max-kl'],
                                 cg_iters=self.configs['cg-iters'],
@@ -237,7 +238,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
     
     def predict(self, observations: np.ndarray, **kwargs):
         with torch.no_grad():
-            observations_tensor = torch.from_numpy(observations).float()
+            observations_tensor = torch.from_numpy(observations).float().to(Config.configs['device'])
             pi = self.policy(observations_tensor)
             actions_tensor = pi.sample()
             actions = actions_tensor.cpu().numpy()

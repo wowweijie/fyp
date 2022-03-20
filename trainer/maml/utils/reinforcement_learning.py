@@ -1,4 +1,5 @@
 import numpy as np
+from trainer.configs import Config
 
 from trainer.maml.utils.torch_utils import weighted_mean, to_numpy
 

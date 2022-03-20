@@ -1,6 +1,6 @@
 sessionName: spdr500
-force-cpu: false
-lag: 5
+force-cpu: true
+lag: 20
 num_episode_train: 20
 env:
   upper_thres: 1.0
@@ -9,7 +9,7 @@ env:
 model:
   algo: MAMLTRPO
   maml:
-    hidden-sizes: [64, 64]
+    hidden-sizes: [128, 128]
     nonlinearity: "tanh"
     num_batches: 10
     fast-batch-size: 4

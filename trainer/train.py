@@ -13,12 +13,15 @@ from trainer.utils import action_mask
 from datetime import datetime
 import pytz
 from timeit import default_timer as timer
+import multiprocessing as mp
 
 print(f"system info: {sys.version}")
 
 if __name__ == '__main__':
+    mp.set_start_method('spawn')
     parser = argparse.ArgumentParser()
     parser.add_argument('--remote', action="store_true", help='specify whether training is done on gcloud')
+    parser.add_argument('--config-ver', action="store", type=int, default = None, help='specify which session yaml config to use')
     parser.add_argument('--job-dir', action="store", type=str, help='specify gcloud storage job dir path')
     args = parser.parse_args()
 

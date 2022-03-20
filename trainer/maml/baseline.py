@@ -15,6 +15,7 @@ class LinearFeatureBaseline(nn.Module):
     def __init__(self, input_size, device, reg_coeff=1e-5):
         super(LinearFeatureBaseline, self).__init__()
         self.input_size = input_size
+        print(f"baseline device:{device}")
         self.device = device
         self._reg_coeff = reg_coeff
 
@@ -79,5 +80,6 @@ class LinearFeatureBaseline(nn.Module):
 
     def forward(self, episodes):
         features = self._feature(episodes)
+        print(f"baseline features device:{features.device}")
         values = torch.mv(features.view(-1, self.feature_size), self.weight)
         return values.view(features.shape[:2])

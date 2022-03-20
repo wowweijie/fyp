@@ -8,6 +8,7 @@ class BatchEpisodes(object):
     def __init__(self, batch_size, gamma=0.95, device='cpu'):
         self.batch_size = batch_size
         self.gamma = gamma
+        print(f"batchepisode device: {device}")
         self.device = device
 
         self._observations_list = [[] for _ in range(batch_size)]
@@ -81,7 +82,7 @@ class BatchEpisodes(object):
     def returns(self):
         if self._returns is None:
             self._returns = torch.zeros_like(self.rewards)
-            return_ = torch.zeros((self.batch_size,), dtype=torch.float32)
+            return_ = torch.zeros((self.batch_size,), dtype=torch.float32, device=self.device)
             for i in range(len(self) - 1, -1, -1):
                 return_ = self.gamma * return_ + self.rewards[i] * self.mask[i]
                 self._returns[i] = return_
@@ -132,7 +133,7 @@ class BatchEpisodes(object):
         # Compute the advantages based on the values
         deltas = self.rewards + self.gamma * values[1:] - values[:-1]
         self._advantages = torch.zeros_like(self.rewards)
-        gae = torch.zeros((self.batch_size,), dtype=torch.float32)
+        gae = torch.zeros((self.batch_size,), dtype=torch.float32, device=self.device)
         for i in range(len(self) - 1, -1, -1):
             gae = gae * self.gamma * gae_lambda + deltas[i]
             self._advantages[i] = gae

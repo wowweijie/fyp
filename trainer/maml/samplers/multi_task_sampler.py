@@ -6,6 +6,7 @@ import time
 
 from datetime import datetime, timezone
 from copy import deepcopy
+from trainer.configs import Config
 
 from trainer.maml.samplers.sampler import Sampler, make_env
 from trainer.maml.envs.utils.sync_vector_env import SyncVectorEnv
@@ -291,7 +292,7 @@ class SamplerWorker(mp.Process):
         episodes.log('process_name', self.name)
 
         t0 = time.time()
-        for item in self.sample_trajectories(params=params):
+        for item in self.sample_trajectories(params=params, device=device):
             episodes.append(*item)
         episodes.log('duration', time.time() - t0)
 
@@ -301,11 +302,11 @@ class SamplerWorker(mp.Process):
                                     normalize=True)
         return episodes
 
-    def sample_trajectories(self, params=None):
+    def sample_trajectories(self, params=None, device='cpu'):
         observations = self.envs.reset()
         with torch.no_grad():
             while not self.envs.dones.all():
-                observations_tensor = torch.from_numpy(observations)
+                observations_tensor = torch.from_numpy(observations).to(device)
                 pi = self.policy(observations_tensor, params=params)
                 actions_tensor = pi.sample()
                 actions = actions_tensor.cpu().numpy()
