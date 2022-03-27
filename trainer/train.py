@@ -19,9 +19,10 @@ print(f"system info: {sys.version}")
 
 if __name__ == '__main__':
     mp.set_start_method('spawn')
+    torch.cuda.empty_cache()
     parser = argparse.ArgumentParser()
     parser.add_argument('--remote', action="store_true", help='specify whether training is done on gcloud')
-    parser.add_argument('--config-ver', action="store", type=int, default = None, help='specify which session yaml config to use')
+    parser.add_argument('--config-ver', action="store", type=str, default = None, help='specify which session yaml config to use')
     parser.add_argument('--job-dir', action="store", type=str, help='specify gcloud storage job dir path')
     args = parser.parse_args()
 
@@ -48,10 +49,10 @@ if __name__ == '__main__':
             # Local path
             os.path.join(DATA_PATH, 'config')
         ])
-        with open(os.path.join(DATA_PATH, 'config', 'session_remote.yaml')) as file:
+        with open(os.path.join(DATA_PATH, 'config', f'session_remote{args.config_ver}.yaml')) as file:
             configs = yaml.load(file, Loader=yaml.FullLoader)                                                                                                                                                               
     else:
-        with open(r'../session_local.yaml') as file:
+        with open(f'../session_local{args.config_ver}.yaml') as file:
             configs = yaml.load(file, Loader=yaml.FullLoader)
 
     globals()['configs'] = configs
@@ -119,7 +120,7 @@ if __name__ == '__main__':
     logger.info(f"env asset after training with mask: {env.asset}")
     logger.csv(env.performance, "train_perf_with_mask")
 
-    trading_env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, 'data/spdr500'))
+    trading_env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, f"data/{configs['sessionName']}"))
     trade_tasks = configs['trade_tasks']
     trading_env.reset_task(*trade_tasks)
     logger.info("Start trading")

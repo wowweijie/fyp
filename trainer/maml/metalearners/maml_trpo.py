@@ -214,6 +214,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
         
         num_iterations = 0
         for batch in range(int(num_batches)):
+            self.logger.info(f"num batch: {batch} / {num_batches}")
             tasks = sampler.sample_tasks(num_tasks=self.configs['meta-batch-size'])
             futures = sampler.sample_async(tasks,
                                        num_steps=self.configs['num-steps'],

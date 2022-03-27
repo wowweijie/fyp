@@ -1,5 +1,5 @@
 sessionName: spdr500
-force-cpu: true
+force-cpu: false
 lag: 20
 num_episode_train: 20
 env:
@@ -11,11 +11,11 @@ model:
   maml:
     hidden-sizes: [128, 128]
     nonlinearity: "tanh"
-    num_batches: 10
-    fast-batch-size: 4
+    num_batches: 20
+    fast-batch-size: 20
     meta-batch-size: 2
     seed: 1
-    num-workers: 1
+    num-workers: 4
     gamma: 0.99
     gae-lambda: 1.0
     max-kl: 1.0e-2
@@ -32,6 +32,7 @@ train_tasks:
  - SPY.USUSD_Candlestick_1_M_01.01.2021-31.01.2021
  - SPY.USUSD_Candlestick_1_M_01.02.2021-28.02.2021
  - SPY.USUSD_Candlestick_1_M_01.03.2021-31.03.2021
- - SPY.USUSD_Candlestick_1_M_01.04.2021-30.04.2021
 trade_tasks:
+ - SPY.USUSD_Candlestick_1_M_01.04.2021-30.04.2021
  - SPY.USUSD_Candlestick_1_M_01.05.2021-31.05.2021
+ - SPY.USUSD_Candlestick_1_M_01.06.2021-30.06.2021
