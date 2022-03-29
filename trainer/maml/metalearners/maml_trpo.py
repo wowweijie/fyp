@@ -53,6 +53,7 @@ class MAMLTRPO(GradientBasedMetaLearner):
            Machine Learning (ICML) (https://arxiv.org/abs/1502.05477)
     """
     def __init__(self,
+                 policy,
                  env,
                  env_kwargs,
                  logger,
@@ -60,16 +61,28 @@ class MAMLTRPO(GradientBasedMetaLearner):
                  first_order=False,
                  device='cpu'):
         self.configs = Config.configs['model']['maml']
-        # Policy
-        policy = get_policy_for_env(env,
-                                    hidden_sizes=self.configs['hidden-sizes'],
-                                    nonlinearity=self.configs['nonlinearity'])
-        policy.share_memory()
         super(MAMLTRPO, self).__init__(policy, env, device=device)
         self.env_kwargs = env_kwargs
         self.logger = logger
         self.fast_lr = fast_lr
         self.first_order = first_order
+
+    @classmethod
+    def new_policy(cls,
+             env,
+             env_kwargs,
+             logger,
+             fast_lr=0.5,
+             first_order=False,
+             device='cpu'):
+             # Policy
+        configs = Config.configs['model']['maml']
+        policy = get_policy_for_env(env,
+                                    hidden_sizes=configs['hidden-sizes'],
+                                    nonlinearity=configs['nonlinearity'])
+        policy.share_memory()
+        learner = cls(policy, env, env_kwargs, logger, device=device)
+        return learner
 
     async def adapt(self, train_futures, first_order=None):
         if first_order is None:

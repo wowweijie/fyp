@@ -17,4 +17,10 @@ class RlAlgoSelector():
             kwargs.pop('env_kwargs')
             return TRPO(**kwargs)
         elif algo_name == 'MAMLTRPO':
-            return MAMLTRPO(env=kwargs['env'], env_kwargs=kwargs['env_kwargs'], logger = Logger(), device=Config.configs['device'])
+            return MAMLTRPO.new_policy(env=kwargs['env'], env_kwargs=kwargs['env_kwargs'], logger = Logger(), device=Config.configs['device'])
+
+
+    @classmethod
+    def load(cls, algo_name, policy, **kwargs):
+        if algo_name == 'MAMLTRPO':
+            return MAMLTRPO(policy=policy, env=kwargs['env'], env_kwargs=kwargs['env_kwargs'], logger=Logger(), device=Config.configs['device'])
