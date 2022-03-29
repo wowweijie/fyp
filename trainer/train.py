@@ -74,7 +74,8 @@ if __name__ == '__main__':
         device = 'cpu'
 
     Config.configs['device'] = device
-    Config.configs['model']['maml']['device'] = device
+    if configs['model'].get('maml'):
+        Config.configs['model']['maml']['device'] = device
  
     env_configs = {'lag': configs['lag'], 'data_dir': os.path.join(DATA_PATH, f"data/{configs['sessionName']}"), 'task_distribution': configs['train_tasks']}
     env = EtfTradingEnv(lag=configs['lag'], data_dir=os.path.join(DATA_PATH, f"data/{configs['sessionName']}"))
@@ -91,7 +92,13 @@ if __name__ == '__main__':
     # env = Monitor(env)
     # model = A2C('MlpPolicy', env, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
     algo = configs['model']['algo']
-    model = RlAlgoSelector.init(algo, policy='MlpPolicy', env=env, env_kwargs=env_configs, verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
+    model = RlAlgoSelector.init(algo, policy='MlpPolicy', env=env, env_kwargs=env_configs, 
+     learning_rate=configs['model']['fast-lr'], gamma=configs['model']['gamma'],
+     cg_max_steps=configs['model']['cg-iters'], cg_damping=configs['model']['cg-damping'],
+     line_search_shrinking_factor=configs['model']['ls-backtrack-ratio'], line_search_max_iter=configs['model']['ls-max-steps'],
+     gae_lambda=configs['model']['gae-lambda'], target_kl=configs['model']['max-kl'],
+     verbose=1, tensorboard_log=f'./logs/{sessionName}_{timestamp}/tb_logs/')
+
     num_episode_train = configs['num_episode_train']
     start_learn = timer()
     model.learn(total_timesteps=num_episode_train * env.get_episodic_step(), log_interval=400)

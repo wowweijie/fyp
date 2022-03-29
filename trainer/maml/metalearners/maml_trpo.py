@@ -254,7 +254,10 @@ class MAMLTRPO(GradientBasedMetaLearner):
         with torch.no_grad():
             observations_tensor = torch.from_numpy(observations).float().to(Config.configs['device'])
             pi = self.policy(observations_tensor)
-            actions_tensor = pi.sample()
+            if kwargs['deterministic']:
+                actions_tensor = pi.mean
+            else:
+                actions_tensor = pi.sample()
             actions = actions_tensor.cpu().numpy()
             return actions, None
 
